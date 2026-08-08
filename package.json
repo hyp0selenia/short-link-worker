@@ -1,0 +1,23 @@
+{
+  "name": "short-link",
+  "version": "1.0.0",
+  "description": "Cloudflare Worker 短链生成器 - 支持有效期与访问次数限制",
+  "main": "src/worker.js",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "tail": "wrangler tail"
+  },
+  "keywords": [
+    "cloudflare",
+    "workers",
+    "url-shortener",
+    "short-link",
+    "kv"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "wrangler": "^3.78.0"
+  }
+}
