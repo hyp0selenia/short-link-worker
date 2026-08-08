@@ -2,16 +2,10 @@ name = "short-link"
 main = "src/worker.js"
 compatibility_date = "2024-09-23"
 
-# KV 命名空间绑定
-# 部署前请把 id 替换为你自己创建的 KV Namespace ID
-# 或使用 GitHub Actions 动态注入
+# 在 Cloudflare Dashboard 连接 GitHub 后，
+# 建议在 Worker → Settings → Bindings 中手动绑定 KV（变量名必须是 LINKS）
+# 或者把下面的 id 改成你的 KV Namespace ID 后推送代码
+
 [[kv_namespaces]]
 binding = "LINKS"
 id = "YOUR_KV_NAMESPACE_ID_HERE"
-
-# 非敏感变量可写在这里
-# [vars]
-# SOME_PUBLIC_VAR = "value"
-
-# 敏感信息请使用 Secret：
-# npx wrangler secret put ADMIN_PASSWORD
