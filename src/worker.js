@@ -2,6 +2,11 @@
  * Cloudflare Worker 短链生成器
  * 前台：有效期最多7天，访问次数最多100次
  * 后台：密码鉴权，无视限制，最多同时存在100条短链
+ *
+ * 环境变量（CF Dashboard → Settings → Variables and Secrets）：
+ * - ADMIN_PASSWORD (Secret)  管理后台密码
+ * - SHORT_HOST               短链主机名，例如 https://s.example.com （不含末尾斜杠）
+ *                            未设置时回退到请求的 origin
  */
 
 const MAX_LINKS = 100;               // 最多同时存在的短链数量
@@ -10,6 +15,11 @@ const MAX_VISITS = 100;              // 前台最大访问次数
 const SHORT_CODE_LENGTH = 6;         // 短码长度
 const ADMIN_COOKIE = 'admin_token';  // 后台登录 Cookie 名称
 
+// 前台 API 参数名混淆（随机风格变量名，降低直接构造请求绕过限制的便利性）
+// 后台不使用这些 key，仍用明文 expireDays / maxVisits
+const FRONT_EXPIRE_KEY = 'k7x_p2q9m';
+const FRONT_VISITS_KEY = 'v3n_r8t1w';
+
 export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
@@ -17,6 +27,10 @@ export default {
 
     // 路由分发
     if (path === '/' || path === '') {
+      return handleFrontend(request, env);
+    }
+    // 修复：/api/create 必须进入前台处理，否则会落到短链跳转逻辑
+    if (path === '/api/create') {
       return handleFrontend(request, env);
     }
     if (path.startsWith('/admin')) {
@@ -54,6 +68,17 @@ function htmlResponse(html, status = 200) {
   });
 }
 
+/** 获取用于生成短链的基础 URL（优先使用环境变量 SHORT_HOST） */
+function getShortBase(env, requestUrl) {
+  const host = (env.SHORT_HOST || '').trim().replace(/\/+$/, '');
+  if (host) {
+    // 支持只写域名或带协议
+    if (/^https?:\/\//i.test(host)) return host;
+    return `https://${host}`;
+  }
+  return requestUrl.origin;
+}
+
 async function getAllLinks(env) {
   const list = await env.LINKS.list({ prefix: 'link:' });
   const links = [];
@@ -74,6 +99,10 @@ async function countLinks(env) {
 /* ==================== 前台页面 ==================== */
 
 function getFrontendHTML(baseUrl) {
+  // 表单控件 id 也做轻度混淆，与 API key 对应
+  const idExpire = 'f_' + FRONT_EXPIRE_KEY;
+  const idVisits = 'f_' + FRONT_VISITS_KEY;
+
   return `<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
@@ -200,7 +229,7 @@ function getFrontendHTML(baseUrl) {
       <div class="row">
         <div class="form-group">
           <label>有效时间</label>
-          <select id="expire">
+          <select id="${idExpire}">
             <option value="1">1 天</option>
             <option value="3">3 天</option>
             <option value="7" selected>7 天</option>
@@ -208,7 +237,7 @@ function getFrontendHTML(baseUrl) {
         </div>
         <div class="form-group">
           <label>访问次数限制</label>
-          <select id="visits">
+          <select id="${idVisits}">
             <option value="1">1 次</option>
             <option value="5">5 次</option>
             <option value="10">10 次</option>
@@ -250,14 +279,17 @@ function getFrontendHTML(baseUrl) {
       btn.textContent = '生成中...';
 
       try {
+        const payload = {
+          url: document.getElementById('url').value.trim()
+        };
+        // 使用混淆后的参数名，避免简单构造请求绕过前端限制
+        payload['${FRONT_EXPIRE_KEY}'] = parseInt(document.getElementById('${idExpire}').value);
+        payload['${FRONT_VISITS_KEY}'] = parseInt(document.getElementById('${idVisits}').value);
+
         const res = await fetch('/api/create', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            url: document.getElementById('url').value.trim(),
-            expireDays: parseInt(document.getElementById('expire').value),
-            maxVisits: parseInt(document.getElementById('visits').value)
-          })
+          body: JSON.stringify(payload)
         });
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || '创建失败');
@@ -291,15 +323,18 @@ async function handleFrontend(request, env) {
   if (url.pathname === '/api/create' && request.method === 'POST') {
     try {
       const body = await request.json();
-      const { url: longUrl, expireDays = 7, maxVisits = 100 } = body;
+      // 支持混淆 key，同时兼容旧 key（防止遗漏），但最终都会被服务端 clamp
+      const longUrl = body.url;
+      const rawExpire = body[FRONT_EXPIRE_KEY] ?? body.expireDays ?? 7;
+      const rawVisits = body[FRONT_VISITS_KEY] ?? body.maxVisits ?? 100;
 
       if (!longUrl || !/^https?:\/\/.+/i.test(longUrl)) {
         return jsonResponse({ error: '请输入有效的 URL（需以 http:// 或 https:// 开头）' }, 400);
       }
 
-      // 前台限制
-      const days = Math.min(Math.max(1, parseInt(expireDays) || 7), MAX_EXPIRE_DAYS);
-      const visits = Math.min(Math.max(1, parseInt(maxVisits) || 100), MAX_VISITS);
+      // 前台强制限制（服务端 clamp，无法通过改参数绕过）
+      const days = Math.min(Math.max(1, parseInt(rawExpire) || 7), MAX_EXPIRE_DAYS);
+      const visits = Math.min(Math.max(1, parseInt(rawVisits) || 100), MAX_VISITS);
 
       // 检查总数量
       const count = await countLinks(env);
@@ -330,14 +365,21 @@ async function handleFrontend(request, env) {
         expirationTtl: Math.ceil((expireAt - now) / 1000) + 3600 // 多留1小时缓冲
       });
 
-      const shortUrl = `${url.origin}/${code}`;
+      const base = getShortBase(env, url);
+      const shortUrl = `${base}/${code}`;
       return jsonResponse({ shortUrl, code, expireAt, maxVisits: visits });
     } catch (e) {
       return jsonResponse({ error: e.message || '服务器错误' }, 500);
     }
   }
 
-  return htmlResponse(getFrontendHTML(url.origin));
+  // 非 POST /api/create 的其它路径（主要是 /）返回前台页面
+  if (url.pathname === '/' || url.pathname === '') {
+    return htmlResponse(getFrontendHTML(url.origin));
+  }
+
+  // 误访问 /api/create 用 GET 等方法
+  return jsonResponse({ error: 'Method Not Allowed' }, 405);
 }
 
 /* ==================== 短链跳转 ==================== */
@@ -492,7 +534,7 @@ function getAdminDashboardHTML(links, baseUrl) {
       ? '<span style="color:#e74c3c">已失效</span>'
       : '<span style="color:#27ae60">有效</span>';
     return `<tr>
-      <td><a href="/${l.code}" target="_blank">${l.code}</a></td>
+      <td><a href="${baseUrl}/${l.code}" target="_blank">${l.code}</a></td>
       <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${l.url}">${l.url}</td>
       <td>${remaining}</td>
       <td>${expireStr}</td>
@@ -733,6 +775,7 @@ function getAdminDashboardHTML(links, baseUrl) {
 async function handleAdmin(request, env, path) {
   const url = new URL(request.url);
   const isAuthed = checkAdminAuth(request, env);
+  const base = getShortBase(env, url);
 
   // 登录
   if (path === '/admin/login' && request.method === 'POST') {
@@ -814,7 +857,7 @@ async function handleAdmin(request, env, path) {
       const options = expireAt ? { expirationTtl: Math.ceil((expireAt - now) / 1000) + 3600 } : {};
       await env.LINKS.put(`link:${code}`, JSON.stringify(data), options);
 
-      return jsonResponse({ shortUrl: `${url.origin}/${code}`, code });
+      return jsonResponse({ shortUrl: `${base}/${code}`, code });
     } catch (e) {
       return jsonResponse({ error: e.message }, 500);
     }
@@ -874,5 +917,5 @@ async function handleAdmin(request, env, path) {
   const links = await getAllLinks(env);
   // 按创建时间倒序
   links.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
-  return htmlResponse(getAdminDashboardHTML(links, url.origin));
+  return htmlResponse(getAdminDashboardHTML(links, base));
 }

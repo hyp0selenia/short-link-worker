@@ -10,6 +10,7 @@
 - **自动失效**：过期或次数用尽后，访问时自动删除
 - **全球加速**：部署在 Cloudflare 边缘网络
 - **免费可用**：适合个人使用，完全在 Cloudflare 免费套餐内
+- **可配置短链域名**：通过环境变量 `SHORT_HOST` 指定生成的短链主机名
 
 ## 🚀 部署方式（Cloudflare 连接 GitHub）
 
@@ -53,13 +54,17 @@
 
 或者直接修改仓库中的 `wrangler.toml`，把 `id` 改成你的 KV Namespace ID，然后重新推送代码触发部署。
 
-### 5. 设置管理密码
+### 5. 设置环境变量 / Secrets
 
 1. 进入 Worker → **Settings** → **Variables and Secrets**
-2. 点击 **Add** → **Secret**
-3. 名称：`ADMIN_PASSWORD`
-4. 值：你的管理密码（建议强密码）
-5. 保存
+2. 添加以下变量：
+
+| 名称 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| `ADMIN_PASSWORD` | Secret | 是 | 管理后台登录密码 |
+| `SHORT_HOST` | Variable 或 Secret | 否 | 生成短链时使用的主机名。例如 `https://s.example.com` 或 `s.example.com`。未设置时使用当前请求的 origin |
+
+3. 保存后重新部署（或触发一次重新部署）使变量生效。
 
 ### 6. 访问
 
@@ -89,6 +94,7 @@ id = "YOUR_KV_NAMESPACE_ID_HERE"   # 替换为你的 KV ID，或在 Dashboard �
 | 名称 | 类型 | 必填 | 说明 |
 |------|------|------|------|
 | `ADMIN_PASSWORD` | Secret | 是 | 管理后台登录密码 |
+| `SHORT_HOST` | Variable | 否 | 短链主机名（推荐设置自定义域名）。支持 `https://s.example.com` 或纯域名 `s.example.com`，末尾斜杠会自动去除 |
 | `LINKS` | KV Binding | 是 | 短链数据存储 |
 
 ## 📖 使用说明
@@ -102,7 +108,8 @@ id = "YOUR_KV_NAMESPACE_ID_HERE"   # 替换为你的 KV ID，或在 Dashboard �
 3. 选择访问次数限制（1 / 5 / 10 / 50 / 100 次）
 4. 点击生成
 
-**前台限制：** 有效期最长 7 天，访问次数最多 100 次，全局最多 100 条短链。
+**前台限制：** 有效期最长 7 天，访问次数最多 100 次，全局最多 100 条短链。  
+服务端会对参数进行强制 clamp，无法通过修改请求体绕过上限。
 
 ### 管理后台
 
@@ -141,6 +148,7 @@ id = "YOUR_KV_NAMESPACE_ID_HERE"   # 替换为你的 KV ID，或在 Dashboard �
 2. `ADMIN_PASSWORD` 必须使用 Secret，不要写进代码
 3. 建议绑定自定义域名，并用 Cloudflare Access 保护 `/admin`
 4. 定期清理无用短链
+5. 推荐设置 `SHORT_HOST` 为正式域名，避免生成的短链指向 workers.dev 临时域名
 
 ## ❓ 常见问题
 
@@ -151,10 +159,13 @@ A: 检查 KV 是否绑定（变量名必须是 `LINKS`），以及 `ADMIN_PASSWO
 A: 不能，需要先在后台删除，或等过期/次数用尽的短链被访问后自动释放。
 
 **Q: 如何绑定自定义域名？**  
-A: Worker → **Triggers** → **Custom Domains** 中添加。
+A: Worker → **Triggers** → **Custom Domains** 中添加。同时建议把该域名设置为 `SHORT_HOST`。
 
 **Q: 免费套餐够用吗？**  
 A: 个人使用完全够用。
+
+**Q: 为什么生成的短链域名不对？**  
+A: 请在 Variables 中设置 `SHORT_HOST` 为你希望的域名（如 `https://s.example.com`），然后重新部署。
 
 ## 📄 License
 
