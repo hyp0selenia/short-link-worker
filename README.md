@@ -91,6 +91,5 @@ id = "YOUR_KV_NAMESPACE_ID_HERE"
 2. 建议绑定自定义域名，并用 Cloudflare Access 保护 `/admin`
 3. 设置 `SHORT_HOST` 为正式域名
 
-## License
-
-MIT
+## AI
+100% AI Generated
