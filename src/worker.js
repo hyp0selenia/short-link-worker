@@ -111,9 +111,11 @@ function getFrontendHTML(baseUrl) {
   <title>短链生成器</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
+    :root { color-scheme: dark; }
     body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #0a0a0a;
+      color: #f2f2f2;
       min-height: 100vh;
       display: flex;
       align-items: center;
@@ -121,114 +123,94 @@ function getFrontendHTML(baseUrl) {
       padding: 20px;
     }
     .container {
-      background: white;
-      border-radius: 16px;
-      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-      padding: 40px;
       width: 100%;
-      max-width: 480px;
+      max-width: 460px;
+      background: #111;
+      border: 1px solid #242424;
+      border-radius: 12px;
+      padding: 28px;
     }
     h1 {
-      text-align: center;
-      color: #333;
-      margin-bottom: 8px;
-      font-size: 28px;
+      color: #f5f5f5;
+      margin-bottom: 24px;
+      font-size: 22px;
+      font-weight: 600;
     }
-    .subtitle {
-      text-align: center;
-      color: #888;
-      margin-bottom: 32px;
-      font-size: 14px;
-    }
-    .form-group {
-      margin-bottom: 20px;
-    }
+    .form-group { margin-bottom: 18px; }
     label {
       display: block;
-      margin-bottom: 6px;
-      color: #555;
-      font-size: 14px;
-      font-weight: 500;
+      margin-bottom: 7px;
+      color: #a8a8a8;
+      font-size: 13px;
     }
     input, select {
       width: 100%;
-      padding: 12px 14px;
-      border: 2px solid #e0e0e0;
-      border-radius: 8px;
-      font-size: 15px;
-      transition: border-color 0.2s;
+      padding: 11px 12px;
+      border: 1px solid #303030;
+      border-radius: 7px;
+      background: #0b0b0b;
+      color: #f2f2f2;
+      font-size: 14px;
     }
     input:focus, select:focus {
       outline: none;
-      border-color: #667eea;
+      border-color: #666;
     }
-    .row {
-      display: flex;
-      gap: 12px;
-    }
-    .row .form-group {
-      flex: 1;
-    }
+    input::placeholder { color: #555; }
+    .row { display: flex; gap: 12px; }
+    .row .form-group { flex: 1; }
     button {
       width: 100%;
-      padding: 14px;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      color: white;
-      border: none;
-      border-radius: 8px;
-      font-size: 16px;
+      padding: 11px;
+      background: #f2f2f2;
+      color: #111;
+      border: 0;
+      border-radius: 7px;
+      font-size: 14px;
       font-weight: 600;
       cursor: pointer;
-      transition: opacity 0.2s;
     }
-    button:hover { opacity: 0.9; }
-    button:disabled { opacity: 0.6; cursor: not-allowed; }
+    button:hover { background: #dcdcdc; }
+    button:disabled { opacity: .5; cursor: not-allowed; }
     .result {
-      margin-top: 24px;
-      padding: 16px;
-      background: #f0f7ff;
-      border-radius: 8px;
+      margin-top: 18px;
+      padding: 14px;
+      background: #171717;
+      border: 1px solid #292929;
+      border-radius: 7px;
       display: none;
     }
     .result.show { display: block; }
-    .result a {
-      color: #667eea;
-      word-break: break-all;
-      font-weight: 600;
-    }
+    .result a { color: #ddd; word-break: break-all; }
     .error {
-      color: #e74c3c;
-      margin-top: 12px;
-      font-size: 14px;
+      color: #ff7070;
+      margin-top: 10px;
+      font-size: 13px;
       display: none;
     }
     .error.show { display: block; }
-    .admin-link {
-      text-align: center;
-      margin-top: 24px;
-    }
+    .admin-link { text-align: center; margin-top: 18px; }
     .admin-link a {
-      color: #999;
+      color: #777;
       font-size: 13px;
       text-decoration: none;
     }
-    .admin-link a:hover { color: #667eea; }
+    .admin-link a:hover { color: #ddd; }
   </style>
 </head>
 <body>
   <div class="container">
-    <h1>🔗 短链生成器</h1>
-    <p class="subtitle">有效期最长 7 天 · 访问次数最多 100 次</p>
+    <h1>短链</h1>
     
     <form id="form">
       <div class="form-group">
-        <label>原始链接 *</label>
+        <label>链接</label>
         <input type="url" id="url" placeholder="https://example.com" required>
       </div>
       
       <div class="row">
         <div class="form-group">
-          <label>有效时间</label>
+          <label>有效期</label>
           <select id="${idExpire}">
             <option value="1">1 天</option>
             <option value="3">3 天</option>
@@ -236,7 +218,7 @@ function getFrontendHTML(baseUrl) {
           </select>
         </div>
         <div class="form-group">
-          <label>访问次数限制</label>
+          <label>次数</label>
           <select id="${idVisits}">
             <option value="1">1 次</option>
             <option value="5">5 次</option>
@@ -247,15 +229,15 @@ function getFrontendHTML(baseUrl) {
         </div>
       </div>
       
-      <button type="submit" id="btn">生成短链</button>
+      <button type="submit" id="btn">生成</button>
     </form>
     
     <div class="error" id="error"></div>
     <div class="result" id="result">
-      <div style="margin-bottom:8px;color:#555;font-size:14px;">短链已生成：</div>
+      
       <a id="shortUrl" href="#" target="_blank"></a>
       <div style="margin-top:12px;">
-        <button type="button" onclick="copyUrl()" style="padding:8px 16px;font-size:13px;width:auto;">复制链接</button>
+        <button type="button" onclick="copyUrl()" style="padding:8px 16px;font-size:13px;width:auto;">复制</button>
       </div>
     </div>
     
@@ -454,54 +436,57 @@ function getAdminLoginHTML() {
   <title>管理后台登录</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
+    :root { color-scheme: dark; }
     body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      background: #1a1a2e;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #0a0a0a;
       min-height: 100vh;
       display: flex;
       align-items: center;
       justify-content: center;
     }
     .box {
-      background: #16213e;
-      padding: 40px;
-      border-radius: 12px;
       width: 100%;
-      max-width: 360px;
-      box-shadow: 0 10px 40px rgba(0,0,0,0.4);
+      max-width: 340px;
+      background: #111;
+      border: 1px solid #242424;
+      padding: 24px;
+      border-radius: 10px;
     }
-    h2 { color: #eee; text-align: center; margin-bottom: 24px; }
+    h2 { color: #f2f2f2; font-size: 20px; font-weight: 600; margin-bottom: 20px; }
     input {
       width: 100%;
-      padding: 12px;
-      border: 1px solid #0f3460;
-      border-radius: 6px;
-      background: #0f3460;
+      padding: 11px 12px;
+      border: 1px solid #303030;
+      border-radius: 7px;
+      background: #0b0b0b;
       color: #fff;
-      font-size: 15px;
-      margin-bottom: 16px;
+      font-size: 14px;
+      margin-bottom: 12px;
     }
-    input:focus { outline: none; border-color: #e94560; }
+    input:focus { outline: none; border-color: #666; }
+    input::placeholder { color: #555; }
     button {
       width: 100%;
-      padding: 12px;
-      background: #e94560;
-      color: white;
+      padding: 11px;
+      background: #f2f2f2;
+      color: #111;
       border: none;
-      border-radius: 6px;
-      font-size: 15px;
+      border-radius: 7px;
+      font-size: 14px;
       cursor: pointer;
+      font-weight: 600;
     }
-    button:hover { background: #ff6b81; }
-    .error { color: #ff6b81; font-size: 13px; margin-top: 12px; text-align: center; display: none; }
+    button:hover { background: #dcdcdc; }
+    .error { color: #ff7070; font-size: 13px; margin-top: 10px; display: none; }
   </style>
 </head>
 <body>
   <div class="box">
-    <h2>🔐 管理后台</h2>
+    <h2>管理后台</h2>
     <form id="loginForm">
-      <input type="password" id="password" placeholder="请输入管理密码" required autofocus>
-      <button type="submit">登录</button>
+      <input type="password" id="password" placeholder="密码" required autofocus>
+      <button type="submit">进入</button>
     </form>
     <div class="error" id="error"></div>
   </div>
@@ -531,8 +516,8 @@ function getAdminDashboardHTML(links, baseUrl) {
     const expireStr = l.expireAt ? new Date(l.expireAt).toLocaleString('zh-CN') : '永久';
     const remaining = l.maxVisits > 0 ? `${l.visits || 0} / ${l.maxVisits}` : `${l.visits || 0} / 无限制`;
     const status = (l.expireAt && Date.now() > l.expireAt) || (l.maxVisits > 0 && (l.visits || 0) >= l.maxVisits)
-      ? '<span style="color:#e74c3c">已失效</span>'
-      : '<span style="color:#27ae60">有效</span>';
+      ? '<span style="color:#ff7070">失效</span>'
+      : '<span style="color:#8fd18f">有效</span>';
     return `<tr>
       <td><a href="${baseUrl}/${l.code}" target="_blank">${l.code}</a></td>
       <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${l.url}">${l.url}</td>
@@ -541,7 +526,7 @@ function getAdminDashboardHTML(links, baseUrl) {
       <td>${status}</td>
       <td>
         <button onclick="editLink('${l.code}')" style="padding:4px 8px;font-size:12px;margin-right:4px;">编辑</button>
-        <button onclick="deleteLink('${l.code}')" style="padding:4px 8px;font-size:12px;background:#e74c3c;">删除</button>
+        <button onclick="deleteLink('${l.code}')" style="padding:4px 8px;font-size:12px;background:#241414;color:#ff8a8a;">删除</button>
       </td>
     </tr>`;
   }).join('');
@@ -554,89 +539,96 @@ function getAdminDashboardHTML(links, baseUrl) {
   <title>短链管理后台</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
+    :root { color-scheme: dark; }
     body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      background: #f5f7fa;
-      padding: 20px;
-      color: #333;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #0a0a0a;
+      color: #e8e8e8;
+      padding: 24px;
     }
     .header {
+      max-width: 1200px;
+      margin: 0 auto 18px;
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 24px;
-      flex-wrap: wrap;
       gap: 12px;
+      flex-wrap: wrap;
     }
-    h1 { font-size: 24px; }
-    .stats { color: #666; font-size: 14px; }
+    h1 { font-size: 20px; font-weight: 600; }
+    .stats { color: #666; font-size: 12px; margin-top: 4px; }
     .btn {
-      padding: 8px 16px;
-      border: none;
+      padding: 8px 12px;
+      border: 1px solid #303030;
       border-radius: 6px;
       cursor: pointer;
-      font-size: 14px;
-      background: #667eea;
-      color: white;
+      font-size: 13px;
+      background: #171717;
+      color: #ddd;
     }
-    .btn:hover { opacity: 0.9; }
-    .btn-danger { background: #e74c3c; }
+    .btn:hover { background: #222; }
+    .btn-danger { color: #ff8a8a; }
     table {
       width: 100%;
+      max-width: 1200px;
+      margin: 0 auto;
       border-collapse: collapse;
-      background: white;
+      background: #111;
+      border: 1px solid #242424;
       border-radius: 8px;
       overflow: hidden;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
     }
     th, td {
-      padding: 12px 16px;
+      padding: 11px 14px;
       text-align: left;
-      border-bottom: 1px solid #eee;
-      font-size: 14px;
+      border-bottom: 1px solid #222;
+      font-size: 13px;
     }
-    th { background: #f8f9fa; font-weight: 600; }
-    tr:hover { background: #fafafa; }
+    th { background: #151515; color: #999; font-weight: 500; }
+    tr:hover { background: #171717; }
+    td a { color: #ddd; }
     .modal {
       display: none;
       position: fixed;
-      top: 0; left: 0; right: 0; bottom: 0;
-      background: rgba(0,0,0,0.5);
+      inset: 0;
+      background: rgba(0,0,0,.72);
       align-items: center;
       justify-content: center;
       z-index: 100;
     }
     .modal.show { display: flex; }
     .modal-content {
-      background: white;
-      padding: 28px;
-      border-radius: 12px;
+      background: #111;
+      border: 1px solid #2a2a2a;
+      padding: 24px;
+      border-radius: 10px;
       width: 90%;
-      max-width: 480px;
+      max-width: 460px;
     }
-    .modal-content h3 { margin-bottom: 20px; }
-    .form-group { margin-bottom: 16px; }
-    .form-group label { display: block; margin-bottom: 6px; font-size: 13px; color: #555; }
+    .modal-content h3 { margin-bottom: 18px; font-size: 18px; }
+    .form-group { margin-bottom: 14px; }
+    .form-group label { display: block; margin-bottom: 6px; font-size: 12px; color: #999; }
     .form-group input, .form-group select {
       width: 100%;
       padding: 10px;
-      border: 1px solid #ddd;
+      border: 1px solid #303030;
       border-radius: 6px;
-      font-size: 14px;
+      background: #0b0b0b;
+      color: #eee;
+      font-size: 13px;
     }
-    .modal-actions { display: flex; gap: 10px; margin-top: 20px; }
+    .modal-actions { display: flex; gap: 8px; margin-top: 18px; }
     .modal-actions button { flex: 1; padding: 10px; }
   </style>
 </head>
 <body>
   <div class="header">
     <div>
-      <h1>短链管理后台</h1>
-      <div class="stats">当前共 ${links.length} / ${MAX_LINKS} 条短链</div>
+      <h1>管理后台</h1>
     </div>
     <div>
-      <button class="btn" onclick="showCreateModal()">+ 新建短链</button>
-      <button class="btn" style="background:#95a5a6;margin-left:8px;" onclick="location.href='/'">前台</button>
+      <button class="btn" onclick="showCreateModal()">新建</button>
+      <button class="btn" style="background:#95a5a6;margin-left:8px;" onclick="location.href='/'">首页</button>
       <button class="btn btn-danger" style="margin-left:8px;" onclick="logout()">退出</button>
     </div>
   </div>
@@ -646,14 +638,14 @@ function getAdminDashboardHTML(links, baseUrl) {
       <tr>
         <th>短码</th>
         <th>原始链接</th>
-        <th>访问次数</th>
-        <th>过期时间</th>
+        <th>次数</th>
+        <th>过期</th>
         <th>状态</th>
         <th>操作</th>
       </tr>
     </thead>
     <tbody>
-      ${rows || '<tr><td colspan="6" style="text-align:center;color:#999;">暂无短链</td></tr>'}
+      ${rows || '<tr><td colspan="6" style="text-align:center;color:#999;">暂无数据</td></tr>'}
     </tbody>
   </table>
 
@@ -664,23 +656,23 @@ function getAdminDashboardHTML(links, baseUrl) {
       <form id="linkForm">
         <input type="hidden" id="editCode">
         <div class="form-group">
-          <label>原始链接 *</label>
+          <label>链接</label>
           <input type="url" id="mUrl" required placeholder="https://example.com">
         </div>
         <div class="form-group">
-          <label>自定义短码（可选，留空自动生成）</label>
-          <input type="text" id="mCode" placeholder="6位字母数字" pattern="[a-zA-Z0-9]{1,12}">
+          <label>短码</label>
+          <input type="text" id="mCode" placeholder="留空自动生成" pattern="[a-zA-Z0-9]{1,12}">
         </div>
         <div class="form-group">
-          <label>有效天数（0=永久，后台无上限）</label>
+          <label>有效天数</label>
           <input type="number" id="mExpire" min="0" value="7">
         </div>
         <div class="form-group">
-          <label>最大访问次数（0=无限制，后台无上限）</label>
+          <label>次数上限</label>
           <input type="number" id="mVisits" min="0" value="100">
         </div>
         <div class="modal-actions">
-          <button type="button" class="btn" style="background:#95a5a6;" onclick="closeModal()">取消</button>
+          <button type="button" class="btn" style="background:#171717;color:#aaa;" onclick="closeModal()">取消</button>
           <button type="submit" class="btn">保存</button>
         </div>
       </form>
